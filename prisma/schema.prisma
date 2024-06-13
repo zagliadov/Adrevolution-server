@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String              @id @default(cuid())
+  email             String              @unique
+  hash              String
+  salt              String
+  firstName         String?
+  lastName          String?
+  lastLogin         DateTime?           @default(now())
+  streetAddress     String?
+  city              String?
+  province          String?
+  postalCode        String?
+  country           String?
+  phoneNumber       String?
+  businessHours     BusinessHours?
+  account           Account?
+  company           Company?            @relation(name: "UserCompany", fields: [companyId], references: [id])
+  companyId         String? // Foreign key для связи с Company
+  CompanyDetails    CompanyDetails?
+  permissions       Permissions[] // Связь с Permissions
+  ownedCompany      Company?            @relation(name: "CompanyOwner")
+  communication     Communication?
+  labourCosts       LabourCost[]
+  VerificationToken VerificationToken[]
+}
+
+model LabourCost {
+  id         String   @id @default(cuid())
+  labourCost Decimal  @default(0.00)
+  costUnit   CostUnit @default(PER_HOUR)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+enum CostUnit {
+  PER_HOUR
+  PER_MONTH
+}
+
+model Communication {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id])
+  surveys       Boolean @default(false)
+  errorMessages Boolean @default(false)
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  isBlockingEnabled Boolean
+  ownerId           String  @unique
+  owner             User    @relation(fields: [ownerId], references: [id])
+}
+
+model Company {
+  id               String          @id @default(cuid())
+  companyName      String?
+  phoneNumber      String?
+  websiteURL       String?
+  companyEmail     String?
+  street1          String?
+  postCode         String?
+  city             String?
+  state            String?
+  country          String?
+  timezone         String?
+  dateFormat       String?
+  timeFormat       String?
+  firstDayOfWeek   String?
+  ownerId          String          @unique
+  owner            User            @relation(fields: [ownerId], references: [id], name: "CompanyOwner")
+  companyDetails   CompanyDetails? @relation(fields: [companyDetailsId], references: [id], name: "CompanyToDetails")
+  companyDetailsId String?         @unique
+  users            User[]          @relation(name: "UserCompany") // Связь с User
+  Permissions      Permissions[]
+}
+
+model CompanyDetails {
+  id                     String   @id @default(cuid())
+  teamSize               String?
+  estimatedAnnualRevenue String?
+  topPriority            String?
+  heardAboutUs           String?
+  industry               String?
+  ownerId                String   @unique
+  displayBusinessHours   Boolean? @default(false)
+  owner                  User     @relation(fields: [ownerId], references: [id])
+  company                Company? @relation(name: "CompanyToDetails")
+}
+
+model BusinessHours {
+  id        String @id @default(cuid())
+  monday    String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": true}")
+  tuesday   String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": true}")
+  wednesday String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": true}")
+  thursday  String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": true}")
+  friday    String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": true}")
+  saturday  String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": false}")
+  sunday    String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": false}")
+  ownerId   String @unique
+  owner     User   @relation(fields: [ownerId], references: [id])
+}
+
+model Permissions {
+  id        String          @id @default(cuid())
+  isOwner   Boolean         @default(false)
+  isAdmin   Boolean         @default(false)
+  level     PermissionLevel @default(WORKER)
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
+  companyId String
+  company   Company         @relation(fields: [companyId], references: [id])
+}
+
+enum PermissionLevel {
+  COMPANY_OWNER
+  LIMITED_WORKER
+  WORKER
+  DISPATCHER
+  MANAGER
+  CUSTOM
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
