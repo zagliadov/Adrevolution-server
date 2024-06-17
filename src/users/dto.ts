@@ -1,144 +1,246 @@
 import { ApiProperty } from '@nestjs/swagger';
-
+import { PermissionLevel } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDate,
+  IsEmail,
   IsEnum,
   IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
-import { PermissionLevel } from 'src/permissions/dto';
 
 export enum CostUnit {
   PER_HOUR = 'PER_HOUR',
   PER_MONTH = 'PER_MONTH',
 }
-export class UserDto {
-  @ApiProperty({
-    example: 'clxa2aljj0000ophlkrpc1gki',
-  })
+
+export class BaseUserDto {
+  @ApiProperty({ example: 'clxa2aljj0000ophlkrpc1gki' })
   id: string;
 
-  @ApiProperty()
+  @IsOptional()
+  @IsEmail()
+  @ApiProperty({ type: String, required: false })
   email: string;
 
-  @ApiProperty()
-  firstName: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  firstName?: string | null;
 
-  @ApiProperty()
-  lastName: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  lastName?: string | null;
 
-  @ApiProperty({ type: String, format: 'date-time' })
-  lastLogin: Date;
+  @IsOptional()
+  @IsDate()
+  @ApiProperty({ type: String, format: 'date-time', required: false })
+  lastLogin: Date | null;
 
-  @ApiProperty()
-  streetAddress?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  streetAddress?: string | null;
 
-  @ApiProperty()
-  city?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  city?: string | null;
 
-  @ApiProperty()
-  province?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  province?: string | null;
 
-  @ApiProperty()
-  postalCode?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  postalCode?: string | null;
 
-  @ApiProperty()
-  country?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  country?: string | null;
 
-  @ApiProperty()
-  phoneNumber?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  phoneNumber?: string | null;
 }
 
+export class UserDto extends BaseUserDto {
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  companyId?: string | null;
+}
+
+export class UserSecretDto extends BaseUserDto {
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  hash: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  salt: string;
+}
 export class PatchUserDto {
-  @ApiProperty()
-  firstName?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'Daniil' })
+  firstName?: string | null;
 
-  @ApiProperty()
-  lastName?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'Zahliadov' })
+  lastName?: string | null;
 
-  @ApiProperty()
-  streetAddress?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: '123 Main St' })
+  streetAddress?: string | null;
 
-  @ApiProperty()
-  city?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'New York' })
+  city?: string | null;
 
-  @ApiProperty()
-  province?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'New Province' })
+  province?: string | null;
 
-  @ApiProperty()
-  postalCode?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: '69904E' })
+  postalCode?: string | null;
 
-  @ApiProperty()
-  country?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'USA' })
+  country?: string | null;
 
-  @ApiProperty()
-  phoneNumber?: string;
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: '+1234567890' })
+  phoneNumber?: string | null;
 }
 
 export class UserWithoutPassword {
-  @ApiProperty()
+  @ApiProperty({ example: 'clxa2aljj0000ophlkrpc1gki' })
   id: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'a.a.t.a.trade@gmail.com' })
+  @IsEmail()
   email: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'John' })
+  @IsString()
   firstName: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'Doe' })
+  @IsString()
   lastName: string;
 
-  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: '123 Main St' })
   streetAddress?: string;
 
-  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'JohnCity' })
   city?: string;
 
-  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'JohnProvince' })
   province?: string;
 
-  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: '67008T' })
   postalCode?: string;
 
-  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'USA' })
   country?: string;
 
-  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: '+1234567890' })
   phoneNumber?: string;
 
-  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @ApiProperty({
+    type: String,
+    required: false,
+    example: 'clxean62l000487898922wqk5',
+  })
   companyId?: string;
 
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
+  @ApiProperty({ type: Number, required: false, example: 20 })
   labourCost?: number;
 
   @IsOptional()
   @IsEnum(CostUnit)
+  @ApiProperty({ enum: CostUnit, required: false, example: CostUnit.PER_HOUR })
   costUnit?: CostUnit;
 
+  @IsOptional()
   @IsBoolean()
+  @ApiProperty({ type: Boolean, required: false, example: true })
   surveys?: boolean;
 
+  @IsOptional()
   @IsBoolean()
-  @ApiProperty()
+  @ApiProperty({ type: Boolean, required: false, example: false })
   isAdmin?: boolean;
 
-  @IsString()
   @IsOptional()
-  @ApiProperty({ enum: PermissionLevel, default: PermissionLevel.WORKER })
+  @IsString()
+  @ApiProperty({
+    enum: PermissionLevel,
+    required: false,
+    example: PermissionLevel.WORKER,
+  })
   permissionLevel?: PermissionLevel;
 
-  @IsString()
   @IsOptional()
-  @ApiProperty()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'Daniil' })
   inviterFirstName?: string;
 
-  @IsString()
   @IsOptional()
-  @ApiProperty()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'Zahliadov' })
   inviterLastName?: string;
+}
+
+export class VerificationTokenDto {
+  @ApiProperty({ example: 'clxa2aljj0000ophlkrpc1gki' })
+  @IsString()
+  id: string;
+
+  @ApiProperty({ example: 'verification-token' })
+  @IsString()
+  token: string;
+
+  @ApiProperty({ example: 'clxa2aljj0000ophlkrpc1gki' })
+  @IsString()
+  userId: string;
+
+  @ApiProperty({ type: String, format: 'date-time' })
+  @IsDate()
+  createdAt: Date;
 }

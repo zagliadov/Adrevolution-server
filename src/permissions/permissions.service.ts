@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DbService } from 'src/db/db.service';
-import { PermissionDto, PermissionLevel } from './dto';
+import { PermissionDto } from './dto';
 import { CompanyService } from 'src/company/company.service';
+import { PermissionLevel } from '@prisma/client';
 
 @Injectable()
 export class PermissionsService {

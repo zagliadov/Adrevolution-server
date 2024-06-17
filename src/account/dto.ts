@@ -1,11 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class AccountDto {
   @ApiProperty()
+  @IsString()
   id: string;
 
   @ApiProperty()
+  @IsString()
   ownerId: string;
 
   @ApiProperty()

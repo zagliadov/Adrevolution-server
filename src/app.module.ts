@@ -23,6 +23,9 @@ import { LabourCostModule } from './labour-cost/labour-cost.module';
 import { CommunicationsController } from './communications/communications.controller';
 import { CommunicationsService } from './communications/communications.service';
 import { CommunicationsModule } from './communications/communications.module';
+import { TransportationController } from './transportation/transportation.controller';
+import { TransportationService } from './transportation/transportation.service';
+import { TransportationModule } from './transportation/transportation.module';
 
 @Module({
   imports: [
@@ -36,6 +39,7 @@ import { CommunicationsModule } from './communications/communications.module';
     PermissionsModule,
     LabourCostModule,
     CommunicationsModule,
+    TransportationModule,
   ],
   controllers: [
     AppController,
@@ -45,6 +49,7 @@ import { CommunicationsModule } from './communications/communications.module';
     PermissionsController,
     LabourCostController,
     CommunicationsController,
+    TransportationController,
   ],
   providers: [
     AppService,
@@ -54,6 +59,7 @@ import { CommunicationsModule } from './communications/communications.module';
     PermissionsService,
     LabourCostService,
     CommunicationsService,
+    TransportationService,
   ],
 })
 export class AppModule {}

@@ -37,6 +37,7 @@ model User {
   communication     Communication?
   labourCosts       LabourCost[]
   VerificationToken VerificationToken[]
+  Transport         Transport[]
 }
 
 model LabourCost {
@@ -88,6 +89,7 @@ model Company {
   companyDetailsId String?         @unique
   users            User[]          @relation(name: "UserCompany") // Связь с User
   Permissions      Permissions[]
+  transports       Transport[]     @relation(name: "CompanyTransports")
 }
 
 model CompanyDetails {
@@ -143,4 +145,22 @@ model VerificationToken {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+}
+
+model Transport {
+  id        String  @id @default(cuid())
+  name      String
+  driverId  String?
+  driver    User?   @relation(fields: [driverId], references: [id])
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], name: "CompanyTransports")
+  load      Load[]  @relation("TransportLoad")
+}
+
+model Load {
+  id          String    @id @default(cuid())
+  description String
+  weight      Float
+  transportId String
+  transport   Transport @relation(fields: [transportId], references: [id], name: "TransportLoad")
 }

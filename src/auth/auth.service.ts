@@ -45,8 +45,8 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const hash = this.passwordService.getHash(password, user.salt);
-    if (hash !== user.hash) {
+    const hash = this.passwordService.getHash(password, user?.salt);
+    if (hash !== user?.hash) {
       throw new UnauthorizedException();
     }
 
@@ -85,7 +85,7 @@ export class AuthService {
       },
     });
 
-    const verificationUrl = `http://localhost:3001/auth/verify?token=${token}`;
+    const verificationUrl = `http://localhost:3001/auth/verify/${token}`;
 
     const mailOptions = {
       from: 'portal.sid.grand2@gmail.com',
@@ -114,84 +114,35 @@ export class AuthService {
     await transporter.sendMail(mailOptions);
   }
 
-  async verifyUser(token: string, password: string) {
-    const tokenRecord = await this.db.verificationToken.findUnique({
-      where: { token },
-    });
-
+  async verifyUserAndSetPassword(token: string, password: string) {
+    const tokenRecord = await this.usersService.findVerificationToken(token);
     if (!tokenRecord) {
       throw new BadRequestException('Invalid or expired token');
     }
 
-    const hash = this.passwordService.getHash(
-      password,
-      this.passwordService.getSalt(),
-    );
-    await this.usersService.updateUserPassword(tokenRecord.userId, hash);
+    const salt = this.passwordService.getSalt();
+    const hash = this.passwordService.getHash(password, salt);
 
-    await this.db.verificationToken.delete({
-      where: { token },
+    // Update user's password with new hash and salt
+    await this.usersService.updateUserPassword(tokenRecord.userId, hash, salt);
+
+    // Remove the verification token
+    await this.usersService.deleteVerificationToken(token);
+
+    // Generate access token
+    const user = await this.usersService.getUserById(tokenRecord.userId);
+    const accessToken = await this.jwtService.signAsync({
+      id: user.id,
+      email: user.email,
     });
-
-    return { message: 'Account verified successfully' };
+    return {
+      message: 'Account verified successfully',
+      accessToken,
+      user: {
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    };
   }
 }
-
-// import {
-//   BadRequestException,
-//   Injectable,
-//   UnauthorizedException,
-// } from '@nestjs/common';
-// import { UsersService } from 'src/users/users.service';
-// import { PasswordService } from './password.service';
-// import { JwtService } from '@nestjs/jwt';
-
-// @Injectable()
-// export class AuthService {
-//   constructor(
-//     private usersService: UsersService,
-//     private passwordService: PasswordService,
-//     private jwtService: JwtService,
-//   ) {}
-//   async signUp(email: string, password: string) {
-//     const user = await this.usersService.findByEmail(email);
-
-//     if (user) {
-//       throw new BadRequestException({ type: 'email-exists' });
-//     }
-
-//     const salt = this.passwordService.getSalt();
-//     const hash = this.passwordService.getHash(password, salt);
-
-//     const newUser = await this.usersService.create(email, hash, salt);
-//     if (!newUser) {
-//       throw new BadRequestException({ type: 'new user error' });
-//     }
-//     const accessToken = await this.jwtService.signAsync({
-//       id: newUser.id,
-//       email: newUser.email,
-//     });
-
-//     return { accessToken };
-//   }
-//   async signIn(email: string, password: string) {
-//     const user = await this.usersService.findByEmail(email);
-//     if (!user) {
-//       throw new UnauthorizedException();
-//     }
-
-//     const hash = this.passwordService.getHash(password, user.salt);
-//     if (hash !== user.hash) {
-//       throw new UnauthorizedException();
-//     }
-
-//     await this.usersService.updateLastLogin(user.id);
-
-//     const accessToken = await this.jwtService.signAsync({
-//       id: user.id,
-//       email: user.email,
-//     });
-
-//     return { accessToken };
-//   }
-// }

@@ -4,8 +4,9 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
   Post,
-  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -16,11 +17,13 @@ import { Response } from 'express';
 import { CookieService } from './cookie.service';
 import { AuthGuard } from './auth.guard';
 import { SessionInfo } from './session-info.decorator';
+import { UsersService } from 'src/users/users.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
+    private usersService: UsersService,
     private cookieService: CookieService,
   ) {}
 
@@ -72,13 +75,23 @@ export class AuthController {
     return session;
   }
 
-  @Post('/verify')
+  @Patch('verify/:token')
   @HttpCode(HttpStatus.OK)
-  async verifyUser(
-    @Query('token') token: string,
-    @Body() body: { password: string },
+  async verifyUserAndSetPassword(
+    @Param('token') token: string,
+    @Body('password') password: string,
   ) {
-    const result = await this.authService.verifyUser(token, body.password);
-    return result;
+    return this.authService.verifyUserAndSetPassword(token, password);
+  }
+
+  @Get('user/:token')
+  async getUserByToken(@Param('token') token: string) {
+    const user = await this.usersService.getUserByVerificationToken(token);
+    return {
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      companyName: user.companyName,
+    };
   }
 }
