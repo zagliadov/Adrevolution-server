@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsNotEmpty, IsString } from 'class-validator';
 
 export class CommunicationDto {
@@ -18,8 +19,10 @@ export class CommunicationDto {
 
 export class UpdateCommunicationDto {
   @IsBoolean()
+  @ApiProperty({ example: true })
   surveys?: boolean;
 
   @IsBoolean()
+  @ApiProperty({ example: true })
   errorMessages?: boolean;
 }
