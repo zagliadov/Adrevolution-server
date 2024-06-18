@@ -91,6 +91,40 @@ export class BusinessHoursService {
   }
 
   /**
+   * Get business hours by user ID
+   * @param userId - ID of the user
+   * @returns BusinessHoursDto
+   */
+  async getBusinessHoursByUserId(userId: string): Promise<BusinessHoursDto> {
+    try {
+      this.logger.log(`Fetching business hours for user ${userId}`);
+      const businessHours = await this.db.businessHours.findUnique({
+        where: { ownerId: userId },
+      });
+
+      if (!businessHours) {
+        this.logger.warn(`Business hours not found for user ${userId}`);
+        throw new NotFoundException(
+          `Business hours not found for user ${userId}`,
+        );
+      }
+
+      const { monday, tuesday, wednesday, thursday, friday, saturday, sunday } =
+        businessHours;
+      this.logger.log(`Successfully fetched business hours for user ${userId}`);
+      return { monday, tuesday, wednesday, thursday, friday, saturday, sunday };
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch business hours for user ${userId}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        'Unable to get business hours. Please try again later.',
+      );
+    }
+  }
+
+  /**
    * Update business hours
    * @param userId - ID of the user
    * @param updateData - Data to update
@@ -113,6 +147,48 @@ export class BusinessHoursService {
 
       this.logger.log(`Successfully updated business hours for user ${userId}`);
       return updatedBusinessHours;
+    } catch (error) {
+      this.logger.error(
+        `Failed to update business hours for user ${userId}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        'Unable to update business hours. Please try again later.',
+      );
+    }
+  }
+
+  /**
+   * Patch business hours by ID
+   * @param userId - ID of the user
+   * @param updateData - Data to update
+   * @returns Updated BusinessHoursDto
+   */
+  async patchBusinessHoursById(
+    userId: string,
+    updateData: PatchBusinessHoursDto,
+  ): Promise<BusinessHoursDto> {
+    try {
+      this.logger.log(`Updating business hours for user ${userId}`);
+      const data = omitBy(updateData, isNil);
+
+      const updatedBusinessHours = await this.db.businessHours.update({
+        where: {
+          ownerId: userId,
+        },
+        data,
+      });
+
+      this.logger.log(`Successfully updated business hours for user ${userId}`);
+      return {
+        monday: updatedBusinessHours.monday,
+        tuesday: updatedBusinessHours.tuesday,
+        wednesday: updatedBusinessHours.wednesday,
+        thursday: updatedBusinessHours.thursday,
+        friday: updatedBusinessHours.friday,
+        saturday: updatedBusinessHours.saturday,
+        sunday: updatedBusinessHours.sunday,
+      };
     } catch (error) {
       this.logger.error(
         `Failed to update business hours for user ${userId}`,

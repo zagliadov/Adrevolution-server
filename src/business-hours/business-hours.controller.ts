@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBody,
   ApiOkResponse,
@@ -56,6 +64,24 @@ export class BusinessHoursController {
   }
 
   /**
+   * Get business hours by user ID
+   * @param userId - ID of the user
+   * @returns BusinessHoursDto
+   */
+  @ApiOperation({ summary: 'Get business hours by user ID' })
+  @ApiOkResponse({
+    description: 'Successfully retrieved business hours',
+    type: BusinessHoursDto,
+  })
+  @ApiResponse({ status: 404, description: 'Business hours not found' })
+  @Get(':userId')
+  async getBusinessHoursByUserId(
+    @Param('userId') userId: string,
+  ): Promise<BusinessHoursDto> {
+    return this.businessHoursService.getBusinessHoursByUserId(userId);
+  }
+
+  /**
    * Update business hours
    * @param body - Updated business hours data
    * @param session - Session information of the user
@@ -74,5 +100,26 @@ export class BusinessHoursController {
     @SessionInfo() session: GetSessionInfoDto,
   ): Promise<BusinessHoursDto> {
     return this.businessHoursService.patchBusinessHours(session.id, body);
+  }
+
+  /**
+   * Patch business hours by user ID
+   * @param userId - ID of the user
+   * @param body - Updated business hours data
+   * @returns Updated BusinessHoursDto
+   */
+  @ApiOperation({ summary: 'Patch business hours by user ID' })
+  @ApiBody({ type: PatchBusinessHoursDto })
+  @ApiOkResponse({
+    description: 'Successfully updated business hours',
+    type: BusinessHoursDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @Patch(':userId')
+  async patchBusinessHoursById(
+    @Param('userId') userId: string,
+    @Body() body: PatchBusinessHoursDto,
+  ): Promise<BusinessHoursDto> {
+    return this.businessHoursService.patchBusinessHoursById(userId, body);
   }
 }
