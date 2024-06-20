@@ -1,27 +1,25 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { DbModule } from 'src/db/db.module';
-import { AccountModule } from 'src/account/account.module';
 import { UsersController } from './users.controller';
 import { CompanyModule } from 'src/company/company.module';
-import { CompanyDetailsModule } from 'src/company-details/company-details.module';
 import { BusinessHoursModule } from 'src/business-hours/business-hours.module';
 import { PermissionsModule } from 'src/permissions/permissions.module';
-import { LabourCostModule } from 'src/labour-cost/labour-cost.module';
-import { CommunicationsModule } from 'src/communications/communications.module';
+import { PaymentTypeModule } from 'src/payment-type/payment-type.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { UserNotificationSettingsModule } from 'src/user-notification-settings/user-notification-settings.module';
+import { UserPositionModule } from 'src/user-position-service/user-position.module';
 
 @Module({
   imports: [
     DbModule,
     forwardRef(() => AuthModule),
-    AccountModule,
     CompanyModule,
-    CompanyDetailsModule,
     BusinessHoursModule,
+    UserPositionModule,
     PermissionsModule,
-    LabourCostModule,
-    CommunicationsModule,
+    PaymentTypeModule,
+    UserNotificationSettingsModule,
   ],
   providers: [UsersService],
   exports: [UsersService],

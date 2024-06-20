@@ -1,13 +1,11 @@
 import {
   BadRequestException,
-  ForbiddenException,
   forwardRef,
   Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { AccountService } from 'src/account/account.service';
 import { DbService } from 'src/db/db.service';
 import {
   PatchUserDto,
@@ -17,29 +15,28 @@ import {
   VerificationTokenDto,
 } from './dto';
 import { CompanyService } from 'src/company/company.service';
-import { CompanyDetailsService } from 'src/company-details/company-details.service';
 import { BusinessHoursService } from 'src/business-hours/business-hours.service';
 import { PermissionsService } from 'src/permissions/permissions.service';
-import { LabourCostService } from 'src/labour-cost/labour-cost.service';
-import { CommunicationsService } from 'src/communications/communications.service';
+import { PaymentTypeService } from 'src/payment-type/payment-type.service';
 import { AuthService } from 'src/auth/auth.service';
-import { PermissionLevel } from '@prisma/client';
+import { UserNotificationSettingsService } from 'src/user-notification-settings/user-notification-settings.service';
+import { PositionType } from '@prisma/client';
+import { UserPositionService } from 'src/user-position-service/user-position.service';
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
   constructor(
-    private db: DbService,
+    private readonly db: DbService,
     @Inject(forwardRef(() => AuthService))
-    private authService: AuthService,
-    private accountService: AccountService,
-    private companyService: CompanyService,
-    private companyDetailsService: CompanyDetailsService,
-    private businessHoursService: BusinessHoursService,
-    private permissionsService: PermissionsService,
-    private labourCostService: LabourCostService,
-    private communicationsService: CommunicationsService,
+    private readonly authService: AuthService,
+    private readonly companyService: CompanyService,
+    private readonly businessHoursService: BusinessHoursService,
+    private readonly permissionsService: PermissionsService,
+    private readonly paymentTypeService: PaymentTypeService,
+    private readonly userNotificationSettingsService: UserNotificationSettingsService,
+    private readonly userPositionService: UserPositionService,
   ) {}
 
   /**
@@ -70,29 +67,30 @@ export class UsersService {
       const user = await this.db.user.create({
         data: { email, hash, salt },
       });
-      await this.accountService.create(user.id);
-      const company = await this.companyService.create(user.id);
-      const companyDetails = await this.companyDetailsService.create(user.id);
-      await this.companyService.connectCompanyDetailsToCompany(
-        companyDetails.id,
-        company.id,
-      );
 
+      const company = await this.companyService.create(user.id);
       if (!company.id) return;
 
       await this.companyService.addUserToCompany(user.id, company.id);
       await this.businessHoursService.create(user.id);
-      await this.communicationsService.create(user.id);
-      await this.labourCostService.createLabourCost({ userId: user.id });
-      await this.permissionsService.create(
-        user.id,
-        company.id,
+      await this.userNotificationSettingsService.create(user.id);
+      await this.paymentTypeService.createPaymentType({ userId: user.id });
+
+      const positionType =
         user.id === company.ownerId
-          ? PermissionLevel.COMPANY_OWNER
-          : PermissionLevel.MANAGER,
-        true,
-        user.id === company.ownerId,
+          ? PositionType.COMPANY_OWNER
+          : PositionType.MANAGER;
+      const userPosition = await this.userPositionService.create(positionType);
+
+      await this.userPositionService.assignUserToPosition(
+        user.id,
+        userPosition.id,
       );
+      await this.permissionsService.create({
+        userPositionId: userPosition.id,
+        isAdmin: user.id === company.ownerId,
+      });
+
       return user;
     } catch (error) {
       this.logger.error('Error creating user', error.stack);
@@ -141,8 +139,8 @@ export class UsersService {
       inviterLastName,
       labourCost,
       costUnit,
-      isAdmin,
-      permissionLevel,
+      isAdmin = false,
+      positionType,
       surveys,
     } = body;
 
@@ -153,58 +151,74 @@ export class UsersService {
     }
 
     try {
-      const newUser = await this.db.user.create({
-        data: {
-          email,
-          hash: '', // temporary value
-          salt: '', // temporary value
-          firstName,
-          lastName,
-          streetAddress,
-          city,
-          province,
-          postalCode,
-          country,
-          phoneNumber,
-          companyId,
-        },
+      const newUser = await this.db.$transaction(async (prisma) => {
+        const newUser = await prisma.user.create({
+          data: {
+            email,
+            hash: '', // temporary value
+            salt: '', // temporary value
+            firstName,
+            lastName,
+            streetAddress,
+            city,
+            province,
+            postalCode,
+            country,
+            phoneNumber,
+          },
+        });
+
+        if (companyId) {
+          await prisma.company.update({
+            where: { id: companyId },
+            data: {
+              users: {
+                connect: { id: newUser.id },
+              },
+            },
+          });
+        }
+
+        return newUser;
       });
 
-      if (!companyId) return;
-      const company = await this.companyService.addUserToCompany(
-        newUser.id,
-        companyId,
-      );
-      await this.accountService.create(newUser.id);
-      await this.businessHoursService.create(newUser.id);
-      await this.communicationsService.create(newUser.id);
-      await this.communicationsService.updateCommunications(newUser.id, {
-        surveys: surveys,
-      });
-      await this.labourCostService.createLabourCost({
-        userId: newUser.id,
-      });
-      await this.labourCostService.updateLabourCost(newUser.id, {
-        labourCost: labourCost,
-        costUnit: costUnit,
-      });
+      await this.db.$transaction(async () => {
+        await this.businessHoursService.create(newUser.id);
+        await this.userNotificationSettingsService.create(newUser.id);
+        await this.userNotificationSettingsService.updateUserNotificationSettings(
+          newUser.id,
+          { surveys },
+        );
+        await this.paymentTypeService.createPaymentType({ userId: newUser.id });
+        await this.paymentTypeService.updatePaymentType(newUser.id, {
+          labourCost: String(labourCost),
+          costUnit,
+        });
 
-      await this.permissionsService.create(
-        newUser.id,
-        companyId,
-        permissionLevel as PermissionLevel,
-        isAdmin,
-      );
+        const userPosition = await this.userPositionService.create(
+          positionType as PositionType,
+        );
+        await this.userPositionService.assignUserToPosition(
+          newUser.id,
+          userPosition.id,
+        );
+        await this.permissionsService.create({
+          userPositionId: userPosition.id,
+          isAdmin,
+        });
 
-      await this.authService.sendVerificationEmail(
-        newUser.email!,
-        newUser.id!,
-        newUser.firstName!,
-        newUser.lastName!,
-        company.companyName!,
-        inviterFirstName!,
-        inviterLastName!,
-      );
+        await this.authService.sendVerificationEmail(
+          newUser.email!,
+          newUser.id!,
+          newUser.firstName!,
+          newUser.lastName!,
+          companyId
+            ? (await this.companyService.getCompanyById(companyId)).name!
+            : '',
+          inviterFirstName!,
+          inviterLastName!,
+        );
+      });
 
       return newUser;
     } catch (error) {
@@ -307,10 +321,10 @@ export class UsersService {
 
     const company = await this.db.company.findUnique({
       where: { id: user.companyId },
-      select: { companyName: true },
+      select: { name: true },
     });
 
-    return { ...user, companyName: company?.companyName || '' };
+    return { ...user, companyName: company?.name || '' };
   }
 
   /**
@@ -407,16 +421,9 @@ export class UsersService {
 
     try {
       // Check if the user is the owner of the company
-      const user = await this.db.user.findUnique({
+      await this.db.user.findUnique({
         where: { id: userId },
-        include: { ownedCompany: true },
       });
-
-      if (user?.ownedCompany) {
-        throw new ForbiddenException(
-          'You cannot delete the owner of the company.',
-        );
-      }
 
       // Start a transaction
       await this.db.$transaction(async (prisma) => {
@@ -425,15 +432,11 @@ export class UsersService {
           where: { userId },
         });
 
-        await prisma.labourCost.deleteMany({
+        await prisma.paymentType.deleteMany({
           where: { userId },
         });
 
-        await prisma.communication.deleteMany({
-          where: { userId },
-        });
-
-        await prisma.permissions.deleteMany({
+        await prisma.userNotificationsSettings.deleteMany({
           where: { userId },
         });
 
@@ -441,8 +444,12 @@ export class UsersService {
           where: { ownerId: userId },
         });
 
-        await prisma.account.deleteMany({
-          where: { ownerId: userId },
+        await prisma.permissions.deleteMany({
+          where: { id: userId },
+        });
+
+        await prisma.userPosition.deleteMany({
+          where: { id: userId },
         });
 
         // Remove the user from the company

@@ -4,62 +4,60 @@ import { AppService } from './app.service';
 import { DbModule } from './db/db.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { AccountModule } from './account/account.module';
 import { CompanyController } from './company/company.controller';
 import { CompanyService } from './company/company.service';
 import { CompanyModule } from './company/company.module';
-import { CompanyDetailsController } from './company-details/company-details.controller';
-import { CompanyDetailsService } from './company-details/company-details.service';
-import { CompanyDetailsModule } from './company-details/company-details.module';
 import { BusinessHoursController } from './business-hours/business-hours.controller';
 import { BusinessHoursService } from './business-hours/business-hours.service';
 import { BusinessHoursModule } from './business-hours/business-hours.module';
 import { PermissionsController } from './permissions/permissions.controller';
 import { PermissionsService } from './permissions/permissions.service';
 import { PermissionsModule } from './permissions/permissions.module';
-import { LabourCostController } from './labour-cost/labour-cost.controller';
-import { LabourCostService } from './labour-cost/labour-cost.service';
-import { LabourCostModule } from './labour-cost/labour-cost.module';
-import { CommunicationsController } from './communications/communications.controller';
-import { CommunicationsService } from './communications/communications.service';
-import { CommunicationsModule } from './communications/communications.module';
-import { TransportationController } from './transportation/transportation.controller';
-import { TransportationService } from './transportation/transportation.service';
-import { TransportationModule } from './transportation/transportation.module';
+import { PaymentTypeController } from './payment-type/payment-type.controller';
+import { PaymentTypeService } from './payment-type/payment-type.service';
+import { UserNotificationSettingsController } from './user-notification-settings/user-notification-settings.controller';
+import { UserNotificationSettingsService } from './user-notification-settings/user-notification-settings.service';
+import { PaymentTypeModule } from './payment-type/payment-type.module';
+import { UserNotificationSettingsModule } from './user-notification-settings/user-notification-settings.module';
+import { ResourcesController } from './resources/resources.controller';
+import { ResourcesService } from './resources/resources.service';
+import { ResourcesModule } from './resources/resources.module';
+import { OrderController } from './order/order.controller';
+import { OrderService } from './order/order.service';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
     DbModule,
     AuthModule,
     UsersModule,
-    AccountModule,
     CompanyModule,
-    CompanyDetailsModule,
     BusinessHoursModule,
     PermissionsModule,
-    LabourCostModule,
-    CommunicationsModule,
-    TransportationModule,
+    PaymentTypeModule,
+    UserNotificationSettingsModule,
+    ResourcesModule,
+    OrderModule,
   ],
   controllers: [
     AppController,
     CompanyController,
-    CompanyDetailsController,
     BusinessHoursController,
     PermissionsController,
-    LabourCostController,
-    CommunicationsController,
-    TransportationController,
+    PaymentTypeController,
+    UserNotificationSettingsController,
+    ResourcesController,
+    OrderController,
   ],
   providers: [
     AppService,
     CompanyService,
-    CompanyDetailsService,
     BusinessHoursService,
     PermissionsService,
-    LabourCostService,
-    CommunicationsService,
-    TransportationService,
+    PaymentTypeService,
+    UserNotificationSettingsService,
+    ResourcesService,
+    OrderService,
   ],
 })
 export class AppModule {}

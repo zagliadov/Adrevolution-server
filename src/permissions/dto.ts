@@ -1,16 +1,35 @@
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsString } from 'class-validator';
 
 export class PermissionDto {
-  @IsBoolean()
   @ApiProperty()
-  isOwner: boolean;
-
-  @IsBoolean()
-  @ApiProperty()
-  isAdmin: boolean;
-
   @IsString()
+  id: string;
+
   @ApiProperty()
-  level: string;
+  @IsString()
+  userPositionId: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  isAdmin: boolean;
+}
+
+export class CreatePermissionDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  userPositionId: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsNotEmpty()
+  isAdmin: boolean;
+}
+
+export class UpdatePermissionDto {
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  isAdmin?: boolean;
 }

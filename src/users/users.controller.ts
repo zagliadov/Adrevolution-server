@@ -52,6 +52,7 @@ export class UsersController {
       if (!user) {
         throw new BadRequestException('User not found');
       }
+      //TODO: remove hash and salt from response, ideally to have JWT token
       return user;
     } catch (error) {
       this.logger.error(`Failed to find user by email: ${email}`, error.stack);

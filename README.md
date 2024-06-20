@@ -1,9 +1,10 @@
 ## Running the app
 
 ```bash
-# development
-$ sudo lsof -i :5432
-$ kill -9 ID
+# development DB
+$ docker compose down
 $ docker compose up
+
+# development server
 $ npm run start:dev
 $ npx prisma studio

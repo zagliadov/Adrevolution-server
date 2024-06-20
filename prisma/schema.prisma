@@ -14,35 +14,58 @@ datasource db {
 }
 
 model User {
-  id                String              @id @default(cuid())
-  email             String              @unique
-  hash              String
-  salt              String
-  firstName         String?
-  lastName          String?
-  lastLogin         DateTime?           @default(now())
-  streetAddress     String?
-  city              String?
-  province          String?
-  postalCode        String?
-  country           String?
-  phoneNumber       String?
-  businessHours     BusinessHours?
-  account           Account?
-  company           Company?            @relation(name: "UserCompany", fields: [companyId], references: [id])
-  companyId         String? // Foreign key для связи с Company
-  CompanyDetails    CompanyDetails?
-  permissions       Permissions[] // Связь с Permissions
-  ownedCompany      Company?            @relation(name: "CompanyOwner")
-  communication     Communication?
-  labourCosts       LabourCost[]
-  VerificationToken VerificationToken[]
-  Transport         Transport[]
+  id                        String                     @id @default(cuid())
+  email                     String                     @unique
+  hash                      String
+  salt                      String
+  firstName                 String?
+  lastName                  String?
+  lastLogin                 DateTime?                  @default(now())
+  streetAddress             String?
+  city                      String?
+  province                  String?
+  postalCode                String?
+  country                   String?
+  phoneNumber               String?
+  businessHours             BusinessHours?
+  company                   Company?                   @relation(name: "Users", fields: [companyId], references: [id])
+  companyId                 String?
+  positionId                String?
+  userPosition              UserPosition?              @relation(fields: [positionId], references: [id])
+  userNotificationsSettings UserNotificationsSettings?
+  paymentType               PaymentType[]
+  VerificationToken         VerificationToken[]
+
+  ownedCompany   Company? @relation(name: "Owner")
+  ownedCompanyId String?  @unique
 }
 
-model LabourCost {
+model UserPosition {
+  id          String        @id @default(cuid())
+  name        PositionType  @default(WORKER)
+  permissions Permissions[]
+  users       User[]
+}
+
+enum PositionType {
+  COMPANY_OWNER
+  LIMITED_WORKER
+  WORKER
+  DISPATCHER
+  MANAGER
+  CUSTOM
+}
+
+model Permissions {
+  id             String       @id @default(cuid())
+  isAdmin        Boolean      @default(false)
+  userPosition   UserPosition @relation(fields: [userPositionId], references: [id])
+  userPositionId String
+}
+
+model PaymentType {
   id         String   @id @default(cuid())
-  labourCost Decimal  @default(0.00)
+  labourCost String   @default("0.00")
   costUnit   CostUnit @default(PER_HOUR)
   userId     String
   user       User     @relation(fields: [userId], references: [id])
@@ -53,7 +76,7 @@ enum CostUnit {
   PER_MONTH
 }
 
-model Communication {
+model UserNotificationsSettings {
   id            String  @id @default(cuid())
   userId        String  @unique
   user          User    @relation(fields: [userId], references: [id])
@@ -61,48 +84,101 @@ model Communication {
   errorMessages Boolean @default(false)
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  isBlockingEnabled Boolean
-  ownerId           String  @unique
-  owner             User    @relation(fields: [ownerId], references: [id])
-}
-
 model Company {
-  id               String          @id @default(cuid())
-  companyName      String?
-  phoneNumber      String?
-  websiteURL       String?
-  companyEmail     String?
-  street1          String?
-  postCode         String?
-  city             String?
-  state            String?
-  country          String?
-  timezone         String?
-  dateFormat       String?
-  timeFormat       String?
-  firstDayOfWeek   String?
-  ownerId          String          @unique
-  owner            User            @relation(fields: [ownerId], references: [id], name: "CompanyOwner")
-  companyDetails   CompanyDetails? @relation(fields: [companyDetailsId], references: [id], name: "CompanyToDetails")
-  companyDetailsId String?         @unique
-  users            User[]          @relation(name: "UserCompany") // Связь с User
-  Permissions      Permissions[]
-  transports       Transport[]     @relation(name: "CompanyTransports")
-}
+  id                   String   @id @default(cuid())
+  name                 String?
+  phoneNumber          String?
+  websiteURL           String?
+  email                String?
+  street1              String?
+  street2              String?
+  postCode             String?
+  city                 String?
+  state                String?
+  country              String?
+  timezone             String?
+  dateFormat           String?
+  timeFormat           String?
+  firstDayOfWeek       String?
+  displayBusinessHours Boolean? @default(false)
 
-model CompanyDetails {
-  id                     String   @id @default(cuid())
   teamSize               String?
   estimatedAnnualRevenue String?
   topPriority            String?
   heardAboutUs           String?
   industry               String?
-  ownerId                String   @unique
-  displayBusinessHours   Boolean? @default(false)
-  owner                  User     @relation(fields: [ownerId], references: [id])
-  company                Company? @relation(name: "CompanyToDetails")
+
+  ownerId String @unique
+  owner   User   @relation(name: "Owner", fields: [ownerId], references: [id])
+
+  users               User[]           @relation(name: "Users")
+  resources           Resource[]       @relation("CompanyResources")
+  orderCompanies      OrderCompanies[] @relation("contractorOrders")
+  subcontractedOrders OrderCompanies[] @relation("subcontractorOrders")
+}
+
+model Resource {
+  id                   String       @id @default(cuid())
+  name                 String
+  type                 ResourceType @default(TRUCK)
+  userId               String?
+  companyId            String
+  additionalProperties Json
+
+  company        Company          @relation(fields: [companyId], references: [id], name: "CompanyResources")
+  orderResources OrderResources[]
+}
+
+enum ResourceType {
+  TRUCK
+  CAR
+  BICYCLE
+  COMPUTER
+  VACUUM_MACHINE
+  SHIP
+  AIRPLANE
+  TRAIN
+  VAN
+  BUS
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  description String
+  status      OrderStatus @default(PENDING)
+  startAt     DateTime
+  endAt       DateTime
+  meta        String
+
+  orderCompanies OrderCompanies[]
+  orderResources OrderResources[]
+}
+
+model OrderCompanies {
+  id                     String  @id @default(cuid())
+  orderId                String
+  contractorCompanyId    String
+  subcontractorCompanyId String?
+
+  order                Order    @relation(fields: [orderId], references: [id])
+  contractorCompany    Company  @relation(name: "contractorOrders", fields: [contractorCompanyId], references: [id])
+  subcontractorCompany Company? @relation(name: "subcontractorOrders", fields: [subcontractorCompanyId], references: [id])
+}
+
+model OrderResources {
+  id         String @id @default(cuid())
+  orderId    String
+  resourceId String
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  resource Resource @relation(fields: [resourceId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
 
 model BusinessHours {
@@ -118,26 +194,6 @@ model BusinessHours {
   owner     User   @relation(fields: [ownerId], references: [id])
 }
 
-model Permissions {
-  id        String          @id @default(cuid())
-  isOwner   Boolean         @default(false)
-  isAdmin   Boolean         @default(false)
-  level     PermissionLevel @default(WORKER)
-  userId    String
-  user      User            @relation(fields: [userId], references: [id])
-  companyId String
-  company   Company         @relation(fields: [companyId], references: [id])
-}
-
-enum PermissionLevel {
-  COMPANY_OWNER
-  LIMITED_WORKER
-  WORKER
-  DISPATCHER
-  MANAGER
-  CUSTOM
-}
-
 model VerificationToken {
   id        String   @id @default(cuid())
   userId    String
@@ -147,20 +203,178 @@ model VerificationToken {
   user User @relation(fields: [userId], references: [id])
 }
 
-model Transport {
-  id        String  @id @default(cuid())
-  name      String
-  driverId  String?
-  driver    User?   @relation(fields: [driverId], references: [id])
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], name: "CompanyTransports")
-  load      Load[]  @relation("TransportLoad")
-}
+// model User {
+//   id                        String                     @id @default(cuid())
+//   email                     String                     @unique
+//   hash                      String
+//   salt                      String
+//   firstName                 String?
+//   lastName                  String?
+//   lastLogin                 DateTime?                  @default(now())
+//   streetAddress             String?
+//   city                      String?
+//   province                  String?
+//   postalCode                String?
+//   country                   String?
+//   phoneNumber               String?
+//   businessHours             BusinessHours?
+//   company                   Company?                   @relation(name: "Users", fields: [companyId], references: [id])
+//   companyId                 String?
+//   positionId                String?
+//   userPosition              UserPosition?              @relation(fields: [positionId], references: [id])
+//   userNotificationsSettings UserNotificationsSettings?
+//   paymentType               PaymentType[]
+//   VerificationToken         VerificationToken[]
 
-model Load {
-  id          String    @id @default(cuid())
-  description String
-  weight      Float
-  transportId String
-  transport   Transport @relation(fields: [transportId], references: [id], name: "TransportLoad")
-}
+//   ownedCompany              Company?                   @relation(name: "Owner", fields: [ownedCompanyId], references: [id])
+//   ownedCompanyId            String?                    @unique
+// }
+
+// model UserPosition {
+//   id          String        @id @default(cuid())
+//   name        PositionType  @default(WORKER)
+//   permissions Permissions[]
+//   users       User[]
+// }
+
+// enum PositionType {
+//   COMPANY_OWNER
+//   LIMITED_WORKER
+//   WORKER
+//   DISPATCHER
+//   MANAGER
+//   CUSTOM
+// }
+
+// model Permissions {
+//   id             String       @id @default(cuid())
+//   isAdmin        Boolean      @default(false)
+//   userPosition   UserPosition @relation(fields: [userPositionId], references: [id])
+//   userPositionId String
+// }
+
+// model PaymentType {
+//   id         String   @id @default(cuid())
+//   labourCost String   @default("0.00")
+//   costUnit   CostUnit @default(PER_HOUR)
+//   userId     String
+//   user       User     @relation(fields: [userId], references: [id])
+// }
+
+// enum CostUnit {
+//   PER_HOUR
+//   PER_MONTH
+// }
+
+// model UserNotificationsSettings {
+//   id            String  @id @default(cuid())
+//   userId        String  @unique
+//   user          User    @relation(fields: [userId], references: [id])
+//   surveys       Boolean @default(false)
+//   errorMessages Boolean @default(false)
+// }
+
+// model Company {
+//   id                   String   @id @default(cuid())
+//   name                 String?
+//   phoneNumber          String?
+//   websiteURL           String?
+//   email                String?
+//   street1              String?
+//   street2              String?
+//   postCode             String?
+//   city                 String?
+//   state                String?
+//   country              String?
+//   timezone             String?
+//   dateFormat           String?
+//   timeFormat           String?
+//   firstDayOfWeek       String?
+//   displayBusinessHours Boolean? @default(false)
+
+//   teamSize               String?
+//   estimatedAnnualRevenue String?
+//   topPriority            String?
+//   heardAboutUs           String?
+//   industry               String?
+
+//   ownerId   String
+//   owner     User     @relation(name: "Owner", fields: [ownerId], references: [id])
+
+//   users     User[]     @relation(name: "Users")
+//   resources Resource[] @relation(name: "Resources")
+//   orderCompanies OrderCompanies[]
+// }
+
+// model Resource {
+//   id                   String @id
+//   name                 String
+//   type                 ResourceType       @default(TRUCK)
+//   userId               User
+//   companyId            Company
+//   additionalProperties JSON
+
+//   user                 User     @relation(fields: [userId], references: [id])
+//   company              Company  @relation(fields: [companyId], references: [id])
+//   orderResources       OrderResources[]
+// }
+
+// enum ResourceType {
+//   TRUCK
+//   CAR
+//   BICYCLE
+//   COMPUTER
+//   VACUUM_MACHINE
+// }
+
+// model Order {
+//   id          String      @id
+//   description String
+//   status      OrderStatus @default(PENDING)
+//   startAt   DateTime
+//   endAt DateTime
+//   meta String
+
+// }
+
+// model OrderCompanies {
+//   id String      @id
+//   orderId -> Order.id
+//    contractorCompanyId -> Company.id
+//   subcontractorCompanyId -> Company.id @default(null)
+// }
+
+// model OrderResources {
+//   id String @id
+//   orderId -> Order.id / OrderCompanies.id
+//   resourceId -> Resource.id
+// }
+
+// enum OrderStatus {
+//   PENDING
+//   IN_PROGRESS
+//   COMPLETED
+//   CANCELLED
+// }
+
+// model BusinessHours {
+//   id        String @id @default(cuid())
+//   monday    String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": true}")
+//   tuesday   String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": true}")
+//   wednesday String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": true}")
+//   thursday  String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": true}")
+//   friday    String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": true}")
+//   saturday  String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": false}")
+//   sunday    String @default("{\"start\": \"09:00\", \"end\": \"17:00\", \"enabled\": false}")
+//   ownerId   String @unique
+//   owner     User   @relation(fields: [ownerId], references: [id])
+// }
+
+// model VerificationToken {
+//   id        String   @id @default(cuid())
+//   userId    String
+//   token     String   @unique
+//   createdAt DateTime @default(now())
+
+//   user User @relation(fields: [userId], references: [id])
+// }

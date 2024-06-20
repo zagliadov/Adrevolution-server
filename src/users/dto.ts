@@ -1,12 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PermissionLevel } from '@prisma/client';
+import { PositionType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDate,
   IsEmail,
   IsEnum,
-  IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -89,6 +88,7 @@ export class UserSecretDto extends BaseUserDto {
   @ApiProperty({ type: String, required: false })
   salt: string;
 }
+
 export class PatchUserDto {
   @IsOptional()
   @IsString()
@@ -99,6 +99,11 @@ export class PatchUserDto {
   @IsString()
   @ApiProperty({ type: String, required: false, example: 'Zahliadov' })
   lastName?: string | null;
+
+  @IsOptional()
+  @IsEmail()
+  @ApiProperty({ type: String, required: false })
+  email: string;
 
   @IsOptional()
   @IsString()
@@ -187,10 +192,10 @@ export class UserWithoutPassword {
   companyId?: string;
 
   @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  @ApiProperty({ type: Number, required: false, example: 20 })
-  labourCost?: number;
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ type: String, required: false, example: '20' })
+  labourCost?: string;
 
   @IsOptional()
   @IsEnum(CostUnit)
@@ -210,11 +215,11 @@ export class UserWithoutPassword {
   @IsOptional()
   @IsString()
   @ApiProperty({
-    enum: PermissionLevel,
+    enum: PositionType,
     required: false,
-    example: PermissionLevel.WORKER,
+    example: PositionType.WORKER,
   })
-  permissionLevel?: PermissionLevel;
+  positionType?: PositionType;
 
   @IsOptional()
   @IsString()

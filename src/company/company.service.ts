@@ -8,11 +8,17 @@ import {
 import { DbService } from 'src/db/db.service';
 import { CompanyDto, PatchCompanyDto } from './dto';
 import { omitBy, isNil } from 'lodash';
+import { ResourcesService } from 'src/resources/resources.service';
+import { ResourceDto, TransportCompanyType } from 'src/resources/dto';
 
 @Injectable()
 export class CompanyService {
   private readonly logger = new Logger(CompanyService.name);
-  constructor(private db: DbService) {}
+
+  constructor(
+    private db: DbService,
+    private resourceService: ResourcesService,
+  ) {}
 
   /**
    * Create new company
@@ -34,6 +40,11 @@ export class CompanyService {
 
       const company = await this.db.company.create({
         data: { ownerId: userId },
+      });
+
+      await this.db.user.update({
+        where: { id: userId },
+        data: { ownedCompanyId: company.id },
       });
 
       this.logger.log(`Successfully created company for user ${userId}`);
@@ -115,6 +126,20 @@ export class CompanyService {
       });
 
       this.logger.log(`Successfully updated company for user ${userId}`);
+
+      // Check if the industry is one of the transport company types and is not null
+      if (
+        updatedCompany.industry &&
+        Object.values(TransportCompanyType).includes(
+          updatedCompany.industry as TransportCompanyType,
+        )
+      ) {
+        await this.resourceService.createDefaultResourcesForCompany(
+          updatedCompany.id,
+          updatedCompany.industry as TransportCompanyType,
+        );
+      }
+
       return updatedCompany;
     } catch (error) {
       this.logger.error(
@@ -136,7 +161,7 @@ export class CompanyService {
   async addUserToCompany(
     userId: string,
     companyId: string,
-  ): Promise<{ companyName: string }> {
+  ): Promise<{ name: string }> {
     try {
       this.logger.log(`Adding user ${userId} to company ${companyId}`);
 
@@ -152,7 +177,7 @@ export class CompanyService {
       this.logger.log(
         `Successfully added user ${userId} to company ${companyId}`,
       );
-      return { companyName: company.companyName ?? '' };
+      return { name: company.name ?? '' };
     } catch (error) {
       this.logger.error(
         `Failed to add user ${userId} to company ${companyId}`,
@@ -160,43 +185,6 @@ export class CompanyService {
       );
       throw new InternalServerErrorException(
         'Unable to add user to company. Please try again later.',
-      );
-    }
-  }
-
-  /**
-   * Connect company details to company
-   * @param companyDetailsId - ID of the company details
-   * @param companyId - ID of the company
-   */
-  async connectCompanyDetailsToCompany(
-    companyDetailsId: string,
-    companyId: string,
-  ): Promise<void> {
-    try {
-      this.logger.log(
-        `Connecting company details ${companyDetailsId} to company ${companyId}`,
-      );
-
-      await this.db.company.update({
-        where: { id: companyId },
-        data: {
-          companyDetails: {
-            connect: { id: companyDetailsId },
-          },
-        },
-      });
-
-      this.logger.log(
-        `Successfully connected company details ${companyDetailsId} to company ${companyId}`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to connect company details ${companyDetailsId} to company ${companyId}`,
-        error.stack,
-      );
-      throw new InternalServerErrorException(
-        'Unable to connect company details. Please try again later.',
       );
     }
   }
@@ -315,5 +303,41 @@ export class CompanyService {
         'Unable to get company by ID. Please try again later.',
       );
     }
+  }
+
+  /**
+   * Get resources of company by company id
+   * @param userId - ID of the user
+   * @returns List of resources
+   */
+  async getCompanyResources(userId: string): Promise<ResourceDto[]> {
+    const company = await this.getCompany(userId);
+
+    if (!company || !company.id) {
+      throw new Error('Company not found or company has no ID');
+    }
+    const resources = await this.resourceService.findAllCompanyResources(
+      company.id,
+    );
+
+    return resources;
+  }
+
+  /**
+   * Get orders of company by company id
+   * @param userId - ID of the user
+   * @returns List of orders
+   */
+  async getCompanyOrders(userId: string): Promise<ResourceDto[]> {
+    const company = await this.getCompany(userId);
+
+    if (!company || !company.id) {
+      throw new Error('Company not found or company has no ID');
+    }
+    const resources = await this.resourceService.findAllCompanyResources(
+      company.id,
+    );
+
+    return resources;
   }
 }

@@ -21,6 +21,24 @@ import { GetSessionInfoDto } from 'src/auth/dto';
 import { SessionInfo } from 'src/auth/session-info.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { UserDto } from 'src/users/dto';
+import { ResourceDto } from 'src/resources/dto';
+
+/*
+  REST API
+  /company
+  GET /company - get all companies
+  GET /company/:id - get company by id
+  POST /company - create company
+  PUT /company/:id - update company by id
+  DELETE /company/:id - delete company by id
+
+  GET /company/:id/users - get users from company
+  POST /company/:id/users
+  GET /company/:id/resources
+
+  GET /resources
+  GET /resources/:id
+*/
 
 @ApiTags('Company')
 @Controller('company')
@@ -64,7 +82,7 @@ export class CompanyController {
     type: [UserDto],
   })
   @ApiResponse({ status: 404, description: 'Company or users not found' })
-  @Get('get-users-of-company/:companyId')
+  @Get(':companyId/users')
   async getUsersOfCompanyById(
     @Param('companyId') companyId: string,
   ): Promise<UserDto[]> {
@@ -78,7 +96,7 @@ export class CompanyController {
     type: [UserDto],
   })
   @ApiResponse({ status: 404, description: 'Company not found' })
-  @Get('get-users-of-company')
+  @Get('users')
   async getUsersOfCompany(
     @SessionInfo() session: GetSessionInfoDto,
   ): Promise<UserDto[]> {
@@ -108,29 +126,11 @@ export class CompanyController {
   async addUserToCompany(
     @Param('companyId') companyId: string,
     @Param('userId') userId: string,
-  ): Promise<{ companyName: string }> {
+  ): Promise<{ name: string }> {
     this.logger.log(
       `Handling PATCH request to add user ${userId} to company ${companyId}`,
     );
     return this.companyService.addUserToCompany(userId, companyId);
-  }
-
-  @ApiOperation({ summary: 'Connect company details to company' })
-  @ApiOkResponse({
-    description: 'Successfully connected company details to company.',
-  })
-  @Patch('connect-company-details/:companyId/:companyDetailsId')
-  async connectCompanyDetailsToCompany(
-    @Param('companyId') companyId: string,
-    @Param('companyDetailsId') companyDetailsId: string,
-  ): Promise<void> {
-    this.logger.log(
-      `Handling PATCH request to connect company details ${companyDetailsId} to company ${companyId}`,
-    );
-    return this.companyService.connectCompanyDetailsToCompany(
-      companyDetailsId,
-      companyId,
-    );
   }
 
   @ApiOperation({ summary: 'Get company by ID' })
@@ -142,5 +142,36 @@ export class CompanyController {
   async getCompanyById(@Param('companyId') companyId: string) {
     this.logger.log(`Handling GET request for users of company ${companyId}`);
     return this.companyService.getCompanyById(companyId);
+  }
+
+  @ApiOperation({ summary: 'Get company resources for current user' })
+  @ApiOkResponse({
+    description: 'Successfully retrieved company resources.',
+    type: String,
+  })
+  @ApiResponse({ status: 404, description: 'Resources not found' })
+  @Get('resources')
+  async getCompanyResources(
+    @SessionInfo() session: GetSessionInfoDto,
+  ): Promise<ResourceDto[]> {
+    this.logger.log(
+      `Handling GET request for company resources of user ${session.id}`,
+    );
+    return this.companyService.getCompanyResources(session.id);
+  }
+
+  @ApiOperation({ summary: 'Get company resources by user id' })
+  @ApiOkResponse({
+    description: 'Successfully retrieved company resources.',
+    type: String,
+  })
+  @ApiResponse({ status: 404, description: 'Resources not found' })
+  @Get('resources/:id')
+  async getCompanyResourcesByUserId(
+    @SessionInfo() session: GetSessionInfoDto,
+    @Param() param: { id: string },
+  ): Promise<ResourceDto[]> {
+    const { id } = param;
+    return this.companyService.getCompanyResources(id);
   }
 }

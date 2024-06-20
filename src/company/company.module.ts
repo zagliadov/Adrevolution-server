@@ -3,9 +3,10 @@ import { CompanyService } from './company.service';
 import { DbModule } from 'src/db/db.module';
 import { CompanyController } from './company.controller';
 import { BusinessHoursModule } from 'src/business-hours/business-hours.module';
+import { ResourcesModule } from 'src/resources/resources.module';
 
 @Module({
-  imports: [DbModule, BusinessHoursModule],
+  imports: [DbModule, BusinessHoursModule, ResourcesModule],
   controllers: [CompanyController],
   providers: [CompanyService],
   exports: [CompanyService],

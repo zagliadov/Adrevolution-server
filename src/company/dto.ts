@@ -9,7 +9,7 @@ export class CompanyDto {
   @IsOptional()
   @IsString()
   @ApiProperty({ type: String, required: false })
-  companyName?: string | null;
+  name?: string | null;
 
   @IsOptional()
   @IsString()
@@ -24,12 +24,17 @@ export class CompanyDto {
   @IsOptional()
   @IsEmail()
   @ApiProperty({ type: String, required: false })
-  companyEmail?: string | null;
+  email?: string | null;
 
   @IsOptional()
   @IsString()
   @ApiProperty({ type: String, required: false })
   street1?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false })
+  street2?: string | null;
 
   @IsOptional()
   @IsString()
@@ -82,8 +87,33 @@ export class CompanyDto {
   firstDayOfWeek?: string | null;
 
   @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: '2-3 people' })
+  teamSize?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: '$0 - $50.000' })
+  estimatedAnnualRevenue?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'Win more work' })
+  topPriority?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'Home Theater' })
+  industry?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'ChatGPT' })
+  heardAboutUs?: string | null;
+
+  @IsOptional()
   @IsBoolean()
-  @ApiProperty({ type: Boolean, required: false, nullable: true })
+  @ApiProperty({ type: Boolean, required: false, example: false })
   displayBusinessHours?: boolean | null;
 }
 
@@ -91,7 +121,7 @@ export class PatchCompanyDto {
   @IsOptional()
   @IsString()
   @ApiProperty({ type: String, required: false, example: 'NewCompany2' })
-  companyName?: string | null;
+  name?: string | null;
 
   @IsOptional()
   @IsString()
@@ -114,12 +144,17 @@ export class PatchCompanyDto {
     required: false,
     example: 'company@example.com',
   })
-  companyEmail?: string | null;
+  email?: string | null;
 
   @IsOptional()
   @IsString()
   @ApiProperty({ type: String, required: false, example: '123 Main St' })
   street1?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'Route 66' })
+  street2?: string | null;
 
   @IsOptional()
   @IsString()
@@ -160,4 +195,34 @@ export class PatchCompanyDto {
   @IsString()
   @ApiProperty({ type: String, required: false, example: 'Monday' })
   firstDayOfWeek?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: '2-3 people' })
+  teamSize?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: '$0 - $50.000' })
+  estimatedAnnualRevenue?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'Win more work' })
+  topPriority?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'Home Theater' })
+  industry?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ type: String, required: false, example: 'ChatGPT' })
+  heardAboutUs?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({ type: Boolean, required: false, example: false })
+  displayBusinessHours?: boolean | null;
 }
