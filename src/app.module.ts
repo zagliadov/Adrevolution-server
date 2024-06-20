@@ -25,6 +25,8 @@ import { ResourcesModule } from './resources/resources.module';
 import { OrderController } from './order/order.controller';
 import { OrderService } from './order/order.service';
 import { OrderModule } from './order/order.module';
+import { OrderCompaniesModule } from './order-companies/order-companies.module';
+import { OrderResourcesModule } from './order-resources/order-resources.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { OrderModule } from './order/order.module';
     UserNotificationSettingsModule,
     ResourcesModule,
     OrderModule,
+    OrderCompaniesModule,
+    OrderResourcesModule,
   ],
   controllers: [
     AppController,

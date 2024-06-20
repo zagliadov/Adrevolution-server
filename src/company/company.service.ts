@@ -9,7 +9,9 @@ import { DbService } from 'src/db/db.service';
 import { CompanyDto, PatchCompanyDto } from './dto';
 import { omitBy, isNil } from 'lodash';
 import { ResourcesService } from 'src/resources/resources.service';
-import { ResourceDto, TransportCompanyType } from 'src/resources/dto';
+import { ResourceDto } from 'src/resources/dto';
+import { OrderDto } from 'src/order/dto';
+import { OrderService } from 'src/order/order.service';
 
 @Injectable()
 export class CompanyService {
@@ -18,6 +20,7 @@ export class CompanyService {
   constructor(
     private db: DbService,
     private resourceService: ResourcesService,
+    private orderService: OrderService,
   ) {}
 
   /**
@@ -128,17 +131,17 @@ export class CompanyService {
       this.logger.log(`Successfully updated company for user ${userId}`);
 
       // Check if the industry is one of the transport company types and is not null
-      if (
-        updatedCompany.industry &&
-        Object.values(TransportCompanyType).includes(
-          updatedCompany.industry as TransportCompanyType,
-        )
-      ) {
-        await this.resourceService.createDefaultResourcesForCompany(
-          updatedCompany.id,
-          updatedCompany.industry as TransportCompanyType,
-        );
-      }
+      // if (
+      //   updatedCompany.industry &&
+      //   Object.values(TransportCompanyType).includes(
+      //     updatedCompany.industry as TransportCompanyType,
+      //   )
+      // ) {
+      //   await this.resourceService.createDefaultResourcesForCompany(
+      //     updatedCompany.id,
+      //     updatedCompany.industry as TransportCompanyType,
+      //   );
+      // }
 
       return updatedCompany;
     } catch (error) {
@@ -306,7 +309,7 @@ export class CompanyService {
   }
 
   /**
-   * Get resources of company by company id
+   * Get resources of company by user ID
    * @param userId - ID of the user
    * @returns List of resources
    */
@@ -314,29 +317,27 @@ export class CompanyService {
     const company = await this.getCompany(userId);
 
     if (!company || !company.id) {
-      throw new Error('Company not found or company has no ID');
+      throw new NotFoundException('Company not found or company has no ID');
     }
+
     const resources = await this.resourceService.findAllCompanyResources(
       company.id,
     );
-
     return resources;
   }
 
   /**
    * Get orders of company by company id
    * @param userId - ID of the user
-   * @returns List of orders
+   * @returns List of resources
    */
-  async getCompanyOrders(userId: string): Promise<ResourceDto[]> {
+  async getCompanyOrders(userId: string): Promise<OrderDto[]> {
     const company = await this.getCompany(userId);
 
     if (!company || !company.id) {
       throw new Error('Company not found or company has no ID');
     }
-    const resources = await this.resourceService.findAllCompanyResources(
-      company.id,
-    );
+    const resources = await this.orderService.findAllCompanyOrders(company.id);
 
     return resources;
   }

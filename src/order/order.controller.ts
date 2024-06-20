@@ -1,4 +1,3 @@
-// src/orders/orders.controller.ts
 import {
   Controller,
   Get,
@@ -15,6 +14,7 @@ import {
   ApiOkResponse,
   ApiResponse,
   ApiBody,
+  ApiParam,
 } from '@nestjs/swagger';
 import { CreateOrderDto, OrderDto, UpdateOrderDto } from './dto';
 import { OrderService } from './order.service';
@@ -41,21 +41,6 @@ export class OrderController {
     this.logger.log('Handling POST request to create order');
     return this.orderService.createOrder(data);
   }
-
-  // /**
-  //  * Retrieve all company orders
-  //  * @returns A list of orders
-  //  */
-  // @ApiOperation({ summary: 'Get all company orders' })
-  // @ApiOkResponse({
-  //   description: 'Successfully retrieved all company orders.',
-  //   type: [OrderDto],
-  // })
-  // @Get()
-  // async findAllCompanyOrders() {
-  //   this.logger.log('Handling GET request to retrieve all company orders');
-  //   return this.orderService.findAllCompanyOrders();
-  // }
 
   /**
    * Retrieve a specific order by its ID
@@ -107,5 +92,30 @@ export class OrderController {
   async removeOrder(@Param('id') id: string) {
     this.logger.log(`Handling DELETE request to remove order with ID ${id}`);
     return this.orderService.removeOrder(id);
+  }
+
+  /**
+   * Retrieve all orders for a company
+   * @param companyId - The ID of the company
+   * @returns A list of orders
+   */
+  @ApiOperation({ summary: 'Get all orders for a company' })
+  @ApiOkResponse({
+    description: 'Successfully retrieved all orders for a company.',
+    type: [OrderDto],
+  })
+  @ApiParam({
+    name: 'companyId',
+    type: String,
+    description: 'The ID of the company',
+  })
+  @Get(':companyId')
+  async findAllCompanyOrders(
+    @Param('companyId') companyId: string,
+  ): Promise<OrderDto[]> {
+    this.logger.log(
+      `Handling GET request to retrieve all orders for company with ID ${companyId}`,
+    );
+    return this.orderService.findAllCompanyOrders(companyId);
   }
 }

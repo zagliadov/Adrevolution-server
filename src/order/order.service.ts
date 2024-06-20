@@ -1,4 +1,3 @@
-// src/orders/orders.service.ts
 import {
   Injectable,
   InternalServerErrorException,
@@ -29,24 +28,6 @@ export class OrderService {
       throw new InternalServerErrorException('Failed to create order');
     }
   }
-
-  // /**
-  //  * Retrieve all orders
-  //  * @returns A list of orders
-  //  */
-  // async findAllCompanyOrders(companyId: string): Promise<Order[]> {
-  //   try {
-  //     this.logger.log('Retrieving all company orders');
-  //     return await this.db.order.findMany({
-  //       where: { companyId },
-  //     });
-  //   } catch (error) {
-  //     this.logger.error('Failed to retrieve company orders', error.stack);
-  //     throw new InternalServerErrorException(
-  //       'Failed to retrieve company orders',
-  //     );
-  //   }
-  // }
 
   /**
    * Retrieve a specific order by its ID
@@ -103,6 +84,33 @@ export class OrderService {
     } catch (error) {
       this.logger.error(`Failed to delete order with ID ${id}`, error.stack);
       throw new InternalServerErrorException('Failed to delete order');
+    }
+  }
+
+  /**
+   * Retrieve all orders for a company
+   * @param companyId - The ID of the company
+   * @returns A list of orders
+   */
+  async findAllCompanyOrders(companyId: string): Promise<Order[]> {
+    try {
+      this.logger.log('Retrieving all orders for company');
+      return await this.db.order.findMany({
+        where: {
+          orderCompanies: {
+            some: { contractorCompanyId: companyId },
+          },
+        },
+        include: {
+          orderCompanies: true,
+          // orderResources: true,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to retrieve company orders', error.stack);
+      throw new InternalServerErrorException(
+        'Failed to retrieve company orders',
+      );
     }
   }
 }

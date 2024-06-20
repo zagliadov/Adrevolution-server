@@ -10,7 +10,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/auth.guard';
@@ -20,6 +19,8 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiBody,
+  ApiParam,
 } from '@nestjs/swagger';
 import {
   PatchUserDto,
@@ -38,21 +39,31 @@ export class UsersController {
   private readonly logger = new Logger(UsersController.name);
   constructor(private usersService: UsersService) {}
 
+  /**
+   * Find user by email
+   * @param email - The email of the user to find
+   * @returns The user with the specified email
+   */
   @ApiOperation({ summary: 'Find user by email' })
   @ApiOkResponse({
     description: 'Successfully found user by email.',
     type: UserSecretDto,
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @Get('find-by-email')
-  async findByEmail(@Query('email') email: string): Promise<UserSecretDto> {
+  @ApiParam({
+    name: 'email',
+    type: String,
+    description: 'The email of the user',
+  })
+  @Get(':email')
+  async findByEmail(@Param('email') email: string): Promise<UserSecretDto> {
     this.logger.log(`Finding user by email: ${email}`);
     try {
       const user = await this.usersService.findByEmail(email);
       if (!user) {
         throw new BadRequestException('User not found');
       }
-      //TODO: remove hash and salt from response, ideally to have JWT token
+      // TODO: remove hash and salt from response, ideally to have JWT token
       return user;
     } catch (error) {
       this.logger.error(`Failed to find user by email: ${email}`, error.stack);
@@ -60,6 +71,11 @@ export class UsersController {
     }
   }
 
+  /**
+   * Get user details
+   * @param session - The session information of the current user
+   * @returns The details of the current user
+   */
   @ApiOperation({ summary: 'Get user details' })
   @ApiOkResponse({
     description: 'Successfully retrieved user details.',
@@ -82,13 +98,19 @@ export class UsersController {
     }
   }
 
+  /**
+   * Get user by ID
+   * @param userId - The ID of the user to retrieve
+   * @returns The user with the specified ID
+   */
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiOkResponse({
     description: 'Successfully retrieved user by ID.',
     type: UserDto,
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @Get('get-user-by-id/:userId')
+  @ApiParam({ name: 'userId', type: String })
+  @Get(':userId')
   async getUserById(@Param('userId') userId: string): Promise<UserDto> {
     this.logger.log(`Fetching user by ID ${userId}`);
     try {
@@ -99,11 +121,16 @@ export class UsersController {
     }
   }
 
+  /**
+   * Create a new user without password
+   * @param body - The user data without password
+   */
   @ApiOperation({ summary: 'Create new user without password' })
   @ApiOkResponse({
     description: 'Successfully created new user without password.',
   })
-  @Post('/create-new-user-without-password')
+  @ApiBody({ type: UserWithoutPassword })
+  @Post('without-password')
   @HttpCode(HttpStatus.OK)
   async createUserWithoutPassword(@Body() body: UserWithoutPassword) {
     this.logger.log(`Creating new user without password`);
@@ -118,11 +145,18 @@ export class UsersController {
     }
   }
 
+  /**
+   * Update user details
+   * @param body - The user data to update
+   * @param session - The session information of the current user
+   * @returns The updated user data
+   */
   @ApiOperation({ summary: 'Update user' })
   @ApiOkResponse({
     description: 'Successfully updated user.',
-    type: PatchUserDto,
+    type: UserDto,
   })
+  @ApiBody({ type: PatchUserDto })
   @Patch()
   async patchUser(
     @Body() body: PatchUserDto,
@@ -137,13 +171,19 @@ export class UsersController {
     }
   }
 
+  /**
+   * Find verification token
+   * @param token - The verification token to find
+   * @returns The found verification token
+   */
   @ApiOperation({ summary: 'Find verification token' })
   @ApiOkResponse({
     description: 'Successfully found verification token.',
     type: VerificationTokenDto,
   })
   @ApiResponse({ status: 404, description: 'Verification token not found' })
-  @Get('find-verification-token/:token')
+  @ApiParam({ name: 'token', type: String })
+  @Get('verification/:token')
   @HttpCode(HttpStatus.OK)
   async findVerificationToken(
     @Param('token') token: string,
@@ -165,12 +205,19 @@ export class UsersController {
     }
   }
 
+  /**
+   * Update user password
+   * @param userId - The ID of the user to update the password for
+   * @param hash - The new password hash
+   * @param salt - The new password salt
+   */
   @ApiOperation({ summary: 'Update user password' })
   @ApiOkResponse({
     description: 'Successfully updated user password.',
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @Patch('update-password/:userId')
+  @ApiParam({ name: 'userId', type: String })
+  @Patch('password/:userId')
   @HttpCode(HttpStatus.OK)
   async updateUserPassword(
     @Param('userId') userId: string,
@@ -189,14 +236,28 @@ export class UsersController {
     }
   }
 
+  /**
+   * Delete user by ID
+   * @param userId - The ID of the user to delete
+   * @param session - The session information of the current user
+   */
+  @ApiOperation({ summary: 'Delete user by ID' })
+  @ApiOkResponse({ description: 'Successfully deleted user.' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiParam({ name: 'userId', type: String })
   @Delete(':userId')
   async deleteUser(
     @Param('userId') userId: string,
     @SessionInfo() session: GetSessionInfoDto,
-  ) {
+  ): Promise<void> {
     this.logger.log(
       `Handling DELETE request for user ${userId} by user ${session.id}`,
     );
-    return this.usersService.deleteUser(userId, session.id);
+    try {
+      await this.usersService.deleteUser(userId, session.id);
+    } catch (error) {
+      this.logger.error(`Failed to delete user ${userId}`, error.stack);
+      throw error;
+    }
   }
 }

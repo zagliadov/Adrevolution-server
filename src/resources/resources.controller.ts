@@ -17,9 +17,11 @@ import {
   ApiResponse,
   ApiBody,
   ApiQuery,
+  ApiParam,
 } from '@nestjs/swagger';
 import {
   CreateResourceDto,
+  ResourceDto,
   TransportCompanyType,
   UpdateResourceDto,
 } from './dto';
@@ -55,10 +57,17 @@ export class ResourcesController {
   @ApiOperation({ summary: 'Get all resources by company id' })
   @ApiOkResponse({
     description: 'Successfully retrieved all resources.',
-    type: [CreateResourceDto],
+    type: [ResourceDto],
   })
-  @Get()
-  async findAllCompanyResources(@Query('companyId') companyId: string) {
+  @ApiParam({
+    name: 'companyId',
+    type: String,
+    description: 'The ID of the company',
+  })
+  @Get(':companyId')
+  async findAllCompanyResources(
+    @Param('companyId') companyId: string,
+  ): Promise<ResourceDto[]> {
     this.logger.log(
       `Handling GET request to retrieve all resources with companyId ${companyId}`,
     );
